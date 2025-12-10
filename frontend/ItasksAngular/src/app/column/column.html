@@ -1,0 +1,16 @@
+<section class="bg-gray-900 text-white rounded-lg p-4 min-w-[280px] max-w-[320px] flex flex-col">
+    <h2 class="text-neon-green font-bold mb-3">{{ title }}</h2>
+    <div 
+        cdkDropList
+        [id]="id"
+        [cdkDropListData]="tasks"
+        [cdkDropListConnectedTo]="['ready', 'inprogress', 'review', 'done']"
+        (cdkDropListDropped)="emitDrop($event)"
+        class="flex-1 overflow-auto min-h-[100px]">
+        @for (t of tasks; track trackById($index, t)) {
+            <div cdkDrag [cdkDragData]="t">
+                <app-card [task]="t"></app-card>
+            </div>
+        }
+    </div>
+</section>

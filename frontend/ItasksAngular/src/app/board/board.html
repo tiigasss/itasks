@@ -1,0 +1,31 @@
+<div class="board-container">
+
+  <app-column
+    [id]="'ready'"
+    title="Ready"
+    [tasks]="ready"
+    (dropped)="onDropped($event)">
+  </app-column>
+
+  <app-column
+    [id]="'inProgress'"
+    title="In Progress"
+    [tasks]="inProgress"
+    (dropped)="onDropped($event)">
+  </app-column>
+
+  <app-column
+    [id]="'review'"
+    title="Waiting for Review"
+    [tasks]="review"
+    (dropped)="onDropped($event)">
+  </app-column>
+
+  <app-column
+    [id]="'done'"
+    title="Done"
+    [tasks]="done"
+    (dropped)="onDropped($event)">
+  </app-column>
+
+</div>

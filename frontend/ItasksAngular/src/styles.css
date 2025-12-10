@@ -1,0 +1,10 @@
+@config '../tailwind.config.js';
+@import "tailwindcss";
+
+
+
+.border-neon { border-color: theme('colors.neon-green') }
+
+body {
+  @apply bg-neutral-900 text-white;
+}

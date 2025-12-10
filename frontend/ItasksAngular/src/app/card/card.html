@@ -1,0 +1,9 @@
+<div class="bg-gray-800 p-3 rounded mb-3" cdkDrag>
+  <div class="flex justify-between">
+    <h3 class="text-sm font-semibold text-white">{{ task.descricao || '(sem desc)' }}</h3>
+    <span class="text-xs px-2 py-1 rounded bg-neon-green text-black">SP: {{ task.storyPoints ?? 0 }}</span>
+  </div>
+  <div class="text-xs text-neutral-300 mt-1">
+    {{ task.programadorId ? ('Assigned: ' + task.programadorId) : 'Unassigned' }}
+  </div>
+</div>

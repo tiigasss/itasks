@@ -1,0 +1,27 @@
+<div class="p-4">
+  <div class="flex justify-between items-center mb-3">
+    <h2 class="text-white">Tipos de Tarefa</h2>
+    <div class="flex gap-2">
+      <button class="px-3 py-1 bg-emerald-500 rounded" (click)="startCreate()">Novo</button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-3 gap-3 mb-4">
+    <div *ngFor="let t of items" class="p-3 rounded bg-neutral-800 text-white">
+      <div class="font-semibold">{{ t.name }}</div>
+      <div class="text-sm text-neutral-400">{{ t.color }}</div>
+      <div class="mt-2 flex gap-2">
+        <button (click)="startEdit(t)" class="px-2 py-1 bg-neutral-700 rounded">Editar</button>
+        <button (click)="remove(t.id)" class="px-2 py-1 bg-rose-600 rounded">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="save()" class="bg-neutral-900 p-3 rounded">
+    <input formControlName="name" placeholder="Nome" class="p-2 rounded bg-neutral-700 text-white w-full mb-2"/>
+    <div class="flex items-center gap-3">
+      <input formControlName="color" type="color" class="h-10 w-12 p-1"/>
+      <button class="px-3 py-2 bg-emerald-500 rounded">Guardar</button>
+    </div>
+  </form>
+</div>

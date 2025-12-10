@@ -1,0 +1,38 @@
+<div class="p-4">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-xl text-white">Gestão de Utilizadores</h2>
+    <button class="px-3 py-2 bg-emerald-500 rounded" (click)="startCreate()">Novo</button>
+  </div>
+
+  <div class="grid grid-cols-3 gap-3 mb-4">
+    <div *ngFor="let u of users" class="p-3 bg-neutral-800 rounded text-white">
+      <div class="font-semibold">{{ u.displayName || u.username }}</div>
+      <div class="text-sm text-neutral-400">{{ u.role }}</div>
+      <div class="mt-2 flex gap-2">
+        <button class="px-2 py-1 bg-neutral-700 rounded" (click)="startEdit(u)">Editar</button>
+        <button class="px-2 py-1 bg-rose-600 rounded" (click)="remove(u.id)">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-neutral-900 p-4 rounded">
+    <h3 class="text-white">{{ editUser ? 'Editar' : 'Criar' }} Utilizador</h3>
+    <form [formGroup]="form" (ngSubmit)="save()" class="grid grid-cols-2 gap-3 mt-3">
+      <input formControlName="username" placeholder="username" class="p-2 rounded bg-neutral-700 text-white"/>
+      <input formControlName="displayName" placeholder="Nome" class="p-2 rounded bg-neutral-700 text-white"/>
+      <select formControlName="role" class="p-2 rounded bg-neutral-700 text-white">
+        <option value="Programador">Programador</option>
+        <option value="Gestor">Gestor</option>
+      </select>
+      <select formControlName="gestorId" class="p-2 rounded bg-neutral-700 text-white">
+        <option value="">(nenhum)</option>
+        <option *ngFor="let g of gestores" [value]="g.id">{{ g.displayName || g.username }}</option>
+      </select>
+      <input formControlName="password" placeholder="password" class="p-2 rounded bg-neutral-700 text-white"/>
+      <div class="col-span-2 flex gap-2 mt-3">
+        <button type="submit" class="px-3 py-2 bg-emerald-500 rounded">Guardar</button>
+        <button type="button" class="px-3 py-2 bg-neutral-700 rounded" (click)="form.reset()">Limpar</button>
+      </div>
+    </form>
+  </div>
+</div>

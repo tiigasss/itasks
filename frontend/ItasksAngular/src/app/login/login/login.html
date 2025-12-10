@@ -1,0 +1,53 @@
+<div class="min-h-screen flex items-center justify-center bg-neutral-900 p-4">
+    <div class="w-full max-w-md bg-neutral-800 rounded-xl shadow-lg p-6">
+        <h1 class="text-2xl font-bold text-emerald-400 text-center mb-4">Entrar</h1>
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+            <label class="block mb-2 text-sm text-neutral-300">Username</label>
+            <input formControlName="username" 
+                   class="w-full mb-3 p-2 rounded bg-neutral-700 text-white border border-neutral-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                   placeholder="ex: gerson" />
+            
+            @if (username?.touched && username?.invalid) {
+                <div class="text-xs text-rose-400 mb-2">
+                    @if (username?.errors?.['required']) {
+                        <div>Username obrigatório.</div>
+                    }
+                    @if (username?.errors?.['minlength']) {
+                        <div>Username curto demais.</div>
+                    }
+                </div>
+            }
+                
+            <label class="block mb-2 text-sm text-neutral-300">Password</label>
+            <input type="password" formControlName="password"
+                   class="w-full mb-3 p-2 rounded bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+
+            @if (password?.touched && password?.invalid) {
+                <div class="text-xs text-rose-400 mb-2">
+                    @if (password?.errors?.['required']) {
+                        <div>Paasword obrigatória</div>
+                    }
+                    @if (password?.errors?.['minlength']) {
+                        <div>Password curta demais.</div>
+                    }
+                </div>
+            }
+
+            @if (errorMessage) {
+                <div class="text-sm text-rose-400 mb-3">
+                    {{ errorMessage }}
+                </div>
+            }
+
+            <button type="submit"
+                    [disabled]="loading"
+                    class="w-full py-2 rounded bg bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-neutral-900 font-semibold">
+                    @if (!loading) { <span>Entrar</span>  }
+                    @else { <span>A processar...</span> }
+            </button>
+        </form>
+        <div class="mt-4 text-sm text-neutral-400">
+            Usar usuários de teste: <strong>alice / password1234</strong> ou <strong>bob / 123456</strong>
+        </div>
+    </div>
+</div>

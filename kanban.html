@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itasks - Kanban</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>🚀 Itasks - Sistema de Gestão</h1>
+            <div class="user-info">
+                <span id="userName">Carregando...</span>
+                <button class="logout-btn" id="logoutBtn">Logout</button>
+            </div>
+        </header>
+
+        <nav class="main-nav" id="mainNav">
+            <button class="nav-btn" id="btnTasks">📋 Nova Tarefa</button>
+            <button class="nav-btn" id="btnUsers">👥 Utilizadores</button>
+            <button class="nav-btn" id="btnTypes">🏷️ Tipos Tarefa</button>
+            <button class="nav-btn" id="btnReports">📊 Relatórios</button>
+            <button class="nav-btn" id="btnReload">🔄 Atualizar</button>
+        </nav>
+
+        <main class="kanban-board">
+            <div class="kanban-column" data-state="ToDo">
+                <h3>📋 To Do (<span id="todoCount">0</span>)</h3>
+                <div class="tasks-list" id="todoList"></div>
+            </div>
+            <div class="kanban-column" data-state="Doing">
+                <h3>🛠️ Doing (<span id="doingCount">0</span>)</h3>
+                <div class="tasks-list" id="doingList"></div>
+            </div>
+            <div class="kanban-column" data-state="Done">
+                <h3>✅ Done (<span id="doneCount">0</span>)</h3>
+                <div class="tasks-list" id="doneList"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        let currentUser = null;
+
+        function loadUserData() {
+            const userData = localStorage.getItem('currentUser');
+            if (!userData) { window.location.href = 'login.html'; return; }
+            currentUser = JSON.parse(userData);
+            document.getElementById('userName').textContent = `👋 ${currentUser.name} (${currentUser.type})`;
+
+            // Esconder botões de gestão se for Programador
+            if (currentUser.type === 'Programador') {
+                document.getElementById('btnTasks').style.display = 'none';
+                document.getElementById('btnUsers').style.display = 'none';
+                document.getElementById('btnTypes').style.display = 'none';
+                document.getElementById('btnReports').style.display = 'none';
+            }
+        }
+
+        async function loadTasks() {
+            try {
+                const response = await fetch(`${API_BASE}/tasks`);
+                const tasks = await response.json();
+                
+                const cols = {
+                    'ToDo': document.getElementById('todoList'),
+                    'Doing': document.getElementById('doingList'),
+                    'Done': document.getElementById('doneList')
+                };
+                
+                Object.values(cols).forEach(el => el.innerHTML = '');
+                let counts = { 'ToDo': 0, 'Doing': 0, 'Done': 0 };
+
+                tasks.forEach(task => {
+                    if(cols[task.state]) {
+                        cols[task.state].appendChild(createTaskElement(task));
+                        counts[task.state]++;
+                    }
+                });
+
+                document.getElementById('todoCount').textContent = counts['ToDo'];
+                document.getElementById('doingCount').textContent = counts['Doing'];
+                document.getElementById('doneCount').textContent = counts['Done'];
+
+            } catch (error) { console.error(error); }
+        }
+
+        function createTaskElement(task) {
+            const div = document.createElement('div');
+            div.className = 'task-card';
+            
+            const endDate = task.predicted_end_date ? task.predicted_end_date.split(' ')[0] : '-';
+            const typeBadge = task.type_name ? `<span style="background:#ddd; padding:2px 5px; border-radius:3px; float:right; font-size:0.7em;">${task.type_name}</span>` : '';
+
+            div.innerHTML = `
+                <div><span class="task-order">#${task.order_num}</span> ${typeBadge}</div>
+                <h4>${task.title}</h4>
+                <small>Dev: ${task.programmer_name || '-'}</small><br>
+                <small style="color:red">Prazo: ${endDate}</small>
+            `;
+
+            // Botões de Movimento
+            // Só mostra se for o Programador dono da tarefa ou Gestor (opcional)
+            // Regra 11: Programador só mexe as suas
+            const isOwner = currentUser.id === task.programmer_id;
+            
+            if (isOwner || currentUser.type === 'Gestor') {
+                if (task.state === 'ToDo') {
+                    div.innerHTML += `<button class="move-btn" onclick="moveTask(${task.id}, 'Doing')">▶ Iniciar</button>`;
+                } else if (task.state === 'Doing') {
+                    div.innerHTML += `<button class="move-btn" onclick="moveTask(${task.id}, 'Done')">✅ Concluir</button>`;
+                }
+            }
+
+            return div;
+        }
+
+        async function moveTask(taskId, newState) {
+            event.stopPropagation();
+            try {
+                const res = await fetch(`${API_BASE}/tasks/${taskId}/move`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        state: newState,
+                        user_id: currentUser.id // Envia quem está a tentar mover
+                    })
+                });
+                const result = await res.json();
+                
+                if (result.success) {
+                    loadTasks();
+                } else {
+                    alert('BLOQUEADO: ' + result.message);
+                }
+            } catch (error) { alert('Erro de conexão'); }
+        }
+
+        // Navegação
+        document.getElementById('btnTasks').onclick = () => window.location.href = 'task-form.html';
+        document.getElementById('btnUsers').onclick = () => window.location.href = 'users.html';
+        document.getElementById('btnTypes').onclick = () => window.location.href = 'types.html';
+        document.getElementById('btnReports').onclick = () => window.location.href = 'reports.html';
+        document.getElementById('btnReload').onclick = loadTasks;
+        document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); window.location.href = 'login.html'; };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserData();
+            loadTasks();
+        });
+    </script>
+</body>
+</html>

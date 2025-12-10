@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itasks - Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🚀 Itasks</h1>
+            <p>Sistema de Gestão de Tarefas</p>
+        </div>
+        
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="username">👤 Username</label>
+                <input type="text" id="username" placeholder="Digite seu username" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="password">🔒 Password</label>
+                <input type="password" id="password" placeholder="Digite sua password" required>
+            </div>
+            
+            <button type="submit" class="login-btn">Entrar no Sistema</button>
+        </form>
+
+        <div class="demo-accounts">
+            <h3>Contas de Demonstração:</h3>
+            <div class="demo-account"><strong>Gestor:</strong> admin / 123</div>
+            <div class="demo-account"><strong>Programador:</strong> joao / 123</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    localStorage.setItem('currentUser', JSON.stringify(result.user));
+                    window.location.href = 'kanban.html';
+                } else {
+                    alert('Credenciais inválidas! Use admin/123 ou joao/123');
+                }
+            } catch (error) {
+                alert('Erro de conexão. Verifique se o servidor está a correr!');
+            }
+        });
+
+        // Preencher automaticamente para demonstração
+        window.addEventListener('load', function() {
+            document.getElementById('username').value = 'admin';
+            document.getElementById('password').value = '123';
+        });
+    </script>
+</body>
+</html>

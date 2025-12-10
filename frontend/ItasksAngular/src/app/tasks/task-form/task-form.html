@@ -1,0 +1,32 @@
+<div class="p-4 bg-neutral-800 rounded text-white">
+  <label class="block text-sm text-neutral-300">Descrição</label>
+  <textarea formControlName="descricao" rows="3" class="w-full p-2 rounded bg-neutral-700 text-white mb-3"></textarea>
+
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="text-sm text-neutral-300">Tipo</label>
+      <select formControlName="tipoId" class="w-full p-2 rounded bg-neutral-700 text-white">
+        <option value="">Escolher</option>
+        <option *ngFor="let t of types" [value]="t.id">{{ t.name }}</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-sm text-neutral-300">Programador</label>
+      <select formControlName="programadorId" class="w-full p-2 rounded bg-neutral-700 text-white">
+        <option value="">(nenhum)</option>
+        <option *ngFor="let u of users" [value]="u.id">{{ u.displayName || u.username }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-3 gap-3 mt-3">
+    <input formControlName="ordem" type="number" class="p-2 rounded bg-neutral-700 text-white" />
+    <input formControlName="storyPoints" type="number" class="p-2 rounded bg-neutral-700 text-white" />
+    <input formControlName="dataPrevistaFim" type="date" class="p-2 rounded bg-neutral-700 text-white" />
+  </div>
+
+  <div class="flex gap-2 mt-4">
+    <button class="px-3 py-2 bg-emerald-500 rounded" (click)="onSave()" [disabled]="readonly">Guardar</button>
+    <button class="px-3 py-2 bg-neutral-600 rounded" (click)="onCancel()">Cancelar</button>
+  </div>
+</div>

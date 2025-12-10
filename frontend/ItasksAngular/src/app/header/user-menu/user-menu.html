@@ -1,0 +1,9 @@
+<div class="flex items-center gap-3 text-white">
+  <div *ngIf="user">{{ user.displayName ?? user.username }}</div>
+  <div class="flex gap-2">
+    <a routerLink="/board" class="px-2 py-1 rounded bg-neutral-700">Board</a>
+    <a routerLink="/users" class="px-2 py-1 rounded bg-neutral-700">Users</a>
+    <a routerLink="/types" class="px-2 py-1 rounded bg-neutral-700">Types</a>
+    <button class="px-2 py-1 bg-rose-600 rounded" (click)="logout()">Logout</button>
+  </div>
+</div>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>📊 Relatórios e Estatísticas</h1>
+            <button class="logout-btn" onclick="window.location.href='kanban.html'">← Voltar</button>
+        </header>
+
+        <div class="form-container" style="text-align: center;">
+            <div class="task-card">
+                <h3>Exportação de Dados</h3>
+                <p>Faça download de todas as tarefas concluídas em formato CSV (Excel).</p>
+                <br>
+                <button class="btn-primary" onclick="downloadCSV()">📥 Download CSV</button>
+            </div>
+
+            <div class="task-card" style="margin-top: 20px;">
+                <h3>Estatísticas Rápidas</h3>
+                <p>Consulte a análise de produtividade e desvios de prazos.</p>
+                <p><em>(Esta funcionalidade gera o CSV detalhado acima para análise)</em></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function downloadCSV() {
+            window.location.href = 'http://localhost:5000/api/reports/csv';
+        }
+    </script>
+</body>
+</html>
