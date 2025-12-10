@@ -1,31 +1,26 @@
-// src/app/services/type.service.ts
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { TaskType } from '../models/task';
-import { safeGetItem, safeSetItem } from '../utils/storage';
+import { Observable, tap } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class TypeService {
-  private KEY = 'kanban_types_v1';
-  constructor() { if (!safeGetItem(this.KEY)) safeSetItem(this.KEY, JSON.stringify([])); }
+  private apiUrl = 'http://localhost:5000/api/types';
+  private types: TaskType[] = [];
 
-  private load(): TaskType[] { return JSON.parse(safeGetItem(this.KEY) ?? '[]') as TaskType[]; }
-  private save(arr: TaskType[]) { safeSetItem(this.KEY, JSON.stringify(arr)); }
+  constructor(private http: HttpClient) { this.refresh(); }
 
-  getAll(): TaskType[] { return this.load(); }
-  getById(id: string) { return this.load().find(x => x.id === id); }
-
-  create(partial: Partial<TaskType>) {
-    const arr = this.load();
-    const novo: TaskType = { id: 'type' + Date.now(), name: partial.name ?? 'Novo', color: partial.color ?? '#4ade80' };
-    arr.push(novo); this.save(arr); return novo;
+  refresh() {
+    this.http.get<TaskType[]>(this.apiUrl).subscribe(data => this.types = data);
   }
 
-  update(t: TaskType) {
-    const arr = this.load();
-    const i = arr.findIndex(x => x.id === t.id);
-    if (i === -1) throw new Error('Not found');
-    arr[i] = { ...arr[i], ...t }; this.save(arr); return arr[i];
-  }
+  getAll(): TaskType[] { return this.types; }
+  getById(id: string) { return this.types.find(x => x.id === id); }
 
-  delete(id: string) { this.save(this.load().filter(x => x.id !== id)); }
+  create(partial: Partial<TaskType>): Observable<any> {
+    return this.http.post(this.apiUrl, partial).pipe(tap(() => this.refresh()));
+  }
+  
+  update(t: TaskType) {}
+  delete(id: string) {}
 }
