@@ -1,10 +1,14 @@
 <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
   <div class="bg-neutral-900 p-4 rounded w-full max-w-2xl">
+
     <div class="flex justify-between items-center mb-3">
       <h3 class="text-lg font-semibold text-white">Detalhes da Tarefa</h3>
       <button (click)="onClose()" class="text-neutral-300">Fechar</button>
     </div>
 
-    <app-task-form [task]="task" [readonly]="true" (cancelled)="onClose()"></app-task-form>
+    <app-task-form 
+      (cancelled)="onClose()">
+    </app-task-form>
+
   </div>
 </div>

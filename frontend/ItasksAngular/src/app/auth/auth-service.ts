@@ -1,60 +1,30 @@
-import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable, throwError, of } from 'rxjs';
+import { delay } from 'rxjs/operators';
 import { AppUser } from '../models/task';
+import { UserService } from '../services/user.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  // URL do Backend Python que criámos anteriormente
-  private apiUrl = 'http://localhost:5000/api/login';
   private STORAGE_KEY = 'kanban_current_user_v2';
-  
   private _currentUser$ = new BehaviorSubject<AppUser | null>(null);
   currentUser$ = this._currentUser$.asObservable();
 
-  constructor(
-    private http: HttpClient,
-    @Inject(PLATFORM_ID) private platformId: Object
-  ) {
-    // Apenas tenta aceder ao sessionStorage se estivermos no browser
-    if (isPlatformBrowser(this.platformId)) {
-      const raw = sessionStorage.getItem(this.STORAGE_KEY);
-      if (raw) {
-        try { 
-          this._currentUser$.next(JSON.parse(raw) as AppUser); 
-        } catch { 
-          sessionStorage.removeItem(this.STORAGE_KEY); 
-        }
-      }
+  constructor(private users: UserService) {
+    const raw = sessionStorage.getItem(this.STORAGE_KEY);
+    if (raw) {
+      try { this._currentUser$.next(JSON.parse(raw) as AppUser); } catch { sessionStorage.removeItem(this.STORAGE_KEY); }
     }
   }
 
-  login(username: string, password: string): Observable<any> {
-    // Faz o pedido POST ao servidor Python
-    return this.http.post<any>(this.apiUrl, { username, password }).pipe(
-      tap(response => {
-        if (response.user) {
-          this._currentUser$.next(response.user);
-          
-          // Guarda a sessão apenas no browser
-          if (isPlatformBrowser(this.platformId)) {
-            sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(response.user));
-          }
-        }
-      })
-    );
+  login(username: string, password: string) {
+    const found = this.users.getAll().find(u => u.username === username && u.password === password);
+    if (!found) return throwError(() => new Error('Credenciais inválidas'));
+    sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(found));
+    this._currentUser$.next(found);
+    return of({ user: found }).pipe(delay(200));
   }
 
-  logout() {
-    this._currentUser$.next(null);
-    // Limpa a sessão apenas no browser
-    if (isPlatformBrowser(this.platformId)) {
-      sessionStorage.removeItem(this.STORAGE_KEY);
-    }
-  }
-
-  get currentUserValue(): AppUser | null { 
-    return this._currentUser$.value; 
-  }
+  logout() { sessionStorage.removeItem(this.STORAGE_KEY); this._currentUser$.next(null); }
+  get currentUserValue(): AppUser | null { return this._currentUser$.value; }
 }

@@ -1,9 +1,46 @@
-<div class="flex items-center gap-3 text-white">
-  <div *ngIf="user">{{ user.displayName ?? user.username }}</div>
-  <div class="flex gap-2">
-    <a routerLink="/board" class="px-2 py-1 rounded bg-neutral-700">Board</a>
-    <a routerLink="/users" class="px-2 py-1 rounded bg-neutral-700">Users</a>
-    <a routerLink="/types" class="px-2 py-1 rounded bg-neutral-700">Types</a>
-    <button class="px-2 py-1 bg-rose-600 rounded" (click)="logout()">Logout</button>
+<nav class="w-full bg-[#0b111e] border-b border-gray-800 shadow py-4">
+  <div class="max-w-7xl mx-auto flex items-center justify-between px-6">
+
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-xl font-bold text-emerald-400 border border-gray-600">
+        {{ user.displayName?.[0] ?? user.username?.[0] | uppercase }}
+      </div>
+      <div class="flex flex-col">
+          <span class="text-gray-200 font-semibold leading-tight">
+            {{ user.displayName ?? user.username }}
+          </span>
+          <span class="text-xs text-gray-500 font-mono">{{ user.role }}</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-6 text-sm">
+
+      <a routerLink="/board"
+        routerLinkActive="text-emerald-400"
+        class="text-gray-300 hover:text-emerald-400 font-medium transition">
+        Board
+      </a>
+
+      <ng-container *ngIf="user.role === 'Gestor'">
+        <a routerLink="/users" routerLinkActive="text-emerald-400" class="text-gray-300 hover:text-emerald-400 font-medium transition">Users</a>
+        <a routerLink="/types" routerLinkActive="text-emerald-400" class="text-gray-300 hover:text-emerald-400 font-medium transition">Types</a>
+        <a routerLink="/reports/manager/pending" routerLinkActive="text-emerald-400" class="text-gray-300 hover:text-emerald-400 font-medium transition">Pending</a>
+        <a routerLink="/reports/manager/completed" routerLinkActive="text-emerald-400" class="text-gray-300 hover:text-emerald-400 font-medium transition">Completed</a>
+      </ng-container>
+
+      <a *ngIf="user.role === 'Programador'"
+        routerLink="/reports/programmer"
+        routerLinkActive="text-emerald-400"
+        class="text-gray-300 hover:text-emerald-400 font-medium transition">
+        My Stats
+      </a>
+
+      <button
+        (click)="logout()"
+        class="bg-red-600/10 hover:bg-red-600 hover:text-white text-red-500 border border-red-600/50 px-4 py-2 rounded transition-all">
+        Logout
+      </button>
+    </div>
+
   </div>
-</div>
+</nav>

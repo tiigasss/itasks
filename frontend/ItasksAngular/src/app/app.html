@@ -1,7 +1,9 @@
-<!-- <div class="min-h-screen bg-black text-white">
-  <app-navbar></app-navbar>
-  <main class="p-6"> -->
-    <app-user-menu></app-user-menu>
-    <router-outlet></router-outlet>
-  <!-- </main>
-</div> -->
+@let user = (auth.currentUser$ | async);
+
+@if (user) {
+  <app-user-menu [user]="user"></app-user-menu>
+}
+
+<div class="h-screen w-full bg-gray-900 text-white overflow-hidden">
+  <router-outlet></router-outlet>
+</div>

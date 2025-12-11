@@ -1,32 +1,80 @@
-<div class="p-4 bg-neutral-800 rounded text-white">
-  <label class="block text-sm text-neutral-300">Descrição</label>
-  <textarea formControlName="descricao" rows="3" class="w-full p-2 rounded bg-neutral-700 text-white mb-3"></textarea>
+<form [formGroup]="form" *ngIf="form">
+  <div class="p-4 bg-neutral-800 rounded text-white">
 
-  <div class="grid grid-cols-2 gap-3">
-    <div>
-      <label class="text-sm text-neutral-300">Tipo</label>
-      <select formControlName="tipoId" class="w-full p-2 rounded bg-neutral-700 text-white">
-        <option value="">Escolher</option>
-        <option *ngFor="let t of types" [value]="t.id">{{ t.name }}</option>
-      </select>
+    <label class="block text-sm text-neutral-300">Descrição</label>
+    <textarea formControlName="descricao" rows="3"
+      class="w-full p-2 rounded bg-neutral-700 text-white mb-3"></textarea>
+      
+    <div *ngIf="form.get('descricao')?.invalid && form.get('descricao')?.touched" class="text-rose-500 text-xs mb-2">
+        Descrição obrigatória.
     </div>
-    <div>
-      <label class="text-sm text-neutral-300">Programador</label>
-      <select formControlName="programadorId" class="w-full p-2 rounded bg-neutral-700 text-white">
-        <option value="">(nenhum)</option>
-        <option *ngFor="let u of users" [value]="u.id">{{ u.displayName || u.username }}</option>
-      </select>
+
+    <div class="grid grid-cols-2 gap-3">
+
+      <div>
+        <label class="text-sm text-neutral-300">Tipo</label>
+        <select formControlName="tipoId" class="w-full p-2 rounded bg-neutral-700 text-white">
+          <option value="">Escolher</option>
+          <option *ngFor="let t of types" [value]="t.id">{{ t.name }}</option>
+        </select>
+        <div *ngIf="form.get('tipoId')?.invalid && form.get('tipoId')?.touched" class="text-rose-500 text-xs mt-1">
+            Tipo obrigatório.
+        </div>
+      </div>
+
+      <div>
+        <label class="text-sm text-neutral-300">Programador</label>
+        <select formControlName="programadorId" class="w-full p-2 rounded bg-neutral-700 text-white">
+          <option value="">(nenhum)</option>
+          <option *ngFor="let u of programmers" [value]="u.id">
+            {{ u.displayName || u.username }}
+          </option>
+        </select>
+      </div>
+
     </div>
-  </div>
 
-  <div class="grid grid-cols-3 gap-3 mt-3">
-    <input formControlName="ordem" type="number" class="p-2 rounded bg-neutral-700 text-white" />
-    <input formControlName="storyPoints" type="number" class="p-2 rounded bg-neutral-700 text-white" />
-    <input formControlName="dataPrevistaFim" type="date" class="p-2 rounded bg-neutral-700 text-white" />
-  </div>
+    <div class="grid grid-cols-2 gap-3 mt-3">
 
-  <div class="flex gap-2 mt-4">
-    <button class="px-3 py-2 bg-emerald-500 rounded" (click)="onSave()" [disabled]="readonly">Guardar</button>
-    <button class="px-3 py-2 bg-neutral-600 rounded" (click)="onCancel()">Cancelar</button>
+      <div>
+        <label class="text-sm text-neutral-300">Ordem</label>
+        <input type="number" formControlName="ordem"
+               class="p-2 rounded bg-neutral-700 text-white w-full" />
+      </div>
+
+      <div>
+        <label class="text-sm text-neutral-300">Story Points</label>
+        <input type="number" formControlName="storyPoints"
+               class="p-2 rounded bg-neutral-700 text-white w-full" />
+      </div>
+
+      <div>
+        <label class="text-sm text-neutral-300">Data Prevista Início</label>
+        <input type="date" formControlName="dataPrevistaInicio"
+               class="p-2 rounded bg-neutral-700 text-white w-full" />
+      </div>
+
+      <div>
+        <label class="text-sm text-neutral-300">Data Prevista Fim</label>
+        <input type="date" formControlName="dataPrevistaFim"
+               class="p-2 rounded bg-neutral-700 text-white w-full" />
+      </div>
+
+    </div>
+
+    <div class="flex gap-2 mt-4">
+      <button type="button" 
+              class="px-3 py-2 bg-green-700 rounded hover:bg-green-800 disabled:opacity-50"
+              (click)="onSave()" [disabled]="readonly">
+        Guardar
+      </button>
+
+      <button type="button" 
+              class="px-3 py-2 bg-neutral-600 rounded hover:bg-neutral-500"
+              (click)="onCancel()">
+        Cancelar
+      </button>
+    </div>
+
   </div>
-</div>
+</form>

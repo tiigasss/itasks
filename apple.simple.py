@@ -1,12 +1,13 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 import mysql.connector
 from datetime import datetime
 import uuid
+import csv
+import io
 
 app = Flask(__name__)
 CORS(app)
-
 
 db_config = {
     'user': 'itasks',
@@ -98,7 +99,7 @@ def create_task():
 def move_task(tid):
     data = request.json
     novo_estado = data['estado']
-    role = data.get('role') # 'Gestor' ou 'Programador'
+    role = data.get('role') 
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
     
@@ -113,8 +114,7 @@ def move_task(tid):
         # Regra 15: Max 2 tarefas em Doing
         if novo_estado == 'Doing':
             cursor.execute("SELECT COUNT(*) as qtd FROM tasks WHERE programador_id = %s AND estado = 'Doing'", (task['programador_id'],))
-            count = cursor.fetchone()['qtd']
-            if count >= 2:
+            if cursor.fetchone()['qtd'] >= 2:
                 conn.close()
                 return jsonify({'error': 'Limite de 2 tarefas em Doing atingido'}), 400
         
@@ -131,7 +131,6 @@ def move_task(tid):
 
     # Atualização de Estado e Datas (Regra 19)
     sql = "UPDATE tasks SET estado = %s"
-    params = [novo_estado]
     
     if novo_estado == 'Doing' and not task['data_real_inicio']:
         sql += ", data_real_inicio = NOW()"
@@ -139,9 +138,7 @@ def move_task(tid):
         sql += ", data_real_fim = NOW()"
     
     sql += " WHERE id = %s"
-    params.append(tid)
-    
-    cursor.execute(sql, tuple(params))
+    cursor.execute(sql, (novo_estado, tid))
     conn.commit()
     conn.close()
     return jsonify({'ok': True})
@@ -162,7 +159,6 @@ def create_type():
     conn = get_db()
     cur = conn.cursor()
     new_id = str(uuid.uuid4())
-    # Se não for enviada cor, usa verde como default
     cur.execute("INSERT INTO task_types (id, name, color) VALUES (%s, %s, %s)", 
                 (new_id, data.get('name', 'Novo Tipo'), data.get('color', '#4ade80')))
     conn.commit()
@@ -184,23 +180,186 @@ def create_user():
     data = request.json
     conn = get_db()
     cur = conn.cursor(dictionary=True)
-    
-    # Validar duplicados (Regra 3: Username único)
     cur.execute("SELECT id FROM users WHERE username = %s", (data['username'],))
     if cur.fetchone():
         conn.close()
         return jsonify({'error': 'Username já existe'}), 400
 
     new_id = str(uuid.uuid4())
-    # Nota: Em produção a password deve ser hashada!
     sql = "INSERT INTO users (id, username, password, display_name, role, gestor_id) VALUES (%s, %s, %s, %s, %s, %s)"
     val = (new_id, data['username'], data.get('password', '123456'), 
            data.get('displayName', data['username']), data['role'], data.get('gestorId'))
-    
     cur.execute(sql, val)
     conn.commit()
     conn.close()
     return jsonify({'id': new_id}), 201
+
+# ==============================================================================
+# NOVOS ENDPOINTS - RELATÓRIOS E ESTATÍSTICAS (REQUISITOS 25-29)
+# ==============================================================================
+
+# REQUISITO 27: Listagem de Tarefas em Curso com Cálculos de Atraso
+@app.route('/api/reports/manager/pending', methods=['GET'])
+def report_manager_pending():
+    gestor_id = request.args.get('gestorId')
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+    
+    # Seleciona tarefas não concluídas e junta com o nome do programador
+    query = """
+        SELECT t.descricao, t.estado, u.username as programador, t.data_prevista_fim, t.ordem
+        FROM tasks t
+        LEFT JOIN users u ON t.programador_id = u.id
+        WHERE t.gestor_id = %s AND t.estado != 'Done'
+        ORDER BY t.estado DESC, t.ordem ASC
+    """
+    cursor.execute(query, (gestor_id,))
+    tasks = cursor.fetchall()
+    conn.close()
+
+    report = []
+    now = datetime.now()
+    for t in tasks:
+        falta = 0
+        atraso = 0
+        # Lógica de cálculo de dias (Backend)
+        if t['data_prevista_fim']:
+            delta = (t['data_prevista_fim'] - now).days
+            if delta < 0:
+                atraso = abs(delta)
+            else:
+                falta = delta
+        
+        report.append({
+            'descricao': t['descricao'],
+            'estado': t['estado'],
+            'ordem': t['ordem'],
+            'programador': t['programador'],
+            'diasFalta': falta,
+            'diasAtraso': atraso
+        })
+    return jsonify(report)
+
+# REQUISITO 25 e 26: Tarefas Concluídas (Programador e Gestor)
+@app.route('/api/reports/completed', methods=['GET'])
+def report_completed():
+    user_id = request.args.get('userId')
+    role = request.args.get('role')
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+    
+    if role == 'Programador':
+        # Req 25: Apenas as tarefas do programador
+        query = "SELECT * FROM tasks WHERE programador_id = %s AND estado = 'Done'"
+    else:
+        # Req 26: Todas as tarefas criadas pelo gestor
+        query = """
+            SELECT t.*, u.username as programador_nome 
+            FROM tasks t LEFT JOIN users u ON t.programador_id = u.id
+            WHERE t.gestor_id = %s AND t.estado = 'Done'
+        """
+    
+    cursor.execute(query, (user_id,))
+    tasks = cursor.fetchall()
+    conn.close()
+    
+    report = []
+    for t in tasks:
+        duracao = 0
+        if t['data_real_inicio'] and t['data_real_fim']:
+            diff = (t['data_real_fim'] - t['data_real_inicio']).days
+            duracao = diff if diff > 0 else 1 # Assume pelo menos 1 dia
+        
+        # Req 26: Desvio (Real vs Previsto)
+        diff_previsto = 0
+        if role == 'Gestor' and t['data_prevista_inicio'] and t['data_prevista_fim']:
+             dias_previstos = (t['data_prevista_fim'] - t['data_prevista_inicio']).days
+             dias_previstos = dias_previstos if dias_previstos > 0 else 1
+             diff_previsto = duracao - dias_previstos
+
+        report.append({
+            'descricao': t['descricao'],
+            'duracaoReal': duracao,
+            'programador': t.get('programador_nome'),
+            'desvio': diff_previsto
+        })
+    return jsonify(report)
+
+# REQUISITO 28: Algoritmo de Previsão baseado em Story Points
+@app.route('/api/stats/prediction', methods=['GET'])
+def prediction_algorithm():
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+    
+    # 1. Calcular média de dias por StoryPoint (Tarefas Done)
+    cursor.execute("SELECT story_points, data_real_inicio, data_real_fim FROM tasks WHERE estado = 'Done' AND story_points > 0")
+    done_tasks = cursor.fetchall()
+    
+    sp_stats = {} 
+    for t in done_tasks:
+        if t['data_real_inicio'] and t['data_real_fim']:
+            days = (t['data_real_fim'] - t['data_real_inicio']).days
+            days = days if days > 0 else 1
+            sp = t['story_points']
+            if sp not in sp_stats: sp_stats[sp] = []
+            sp_stats[sp].append(days)
+            
+    avg_per_sp = {k: sum(v)/len(v) for k, v in sp_stats.items()}
+    
+    # 2. Somar estimativa para tarefas ToDo
+    cursor.execute("SELECT story_points FROM tasks WHERE estado = 'ToDo'")
+    todo_tasks = cursor.fetchall()
+    conn.close()
+    
+    total_days = 0
+    available_sps = list(avg_per_sp.keys())
+    
+    for t in todo_tasks:
+        sp = t['story_points'] or 0
+        if sp == 0: continue
+        
+        if sp in avg_per_sp:
+            total_days += avg_per_sp[sp]
+        elif available_sps:
+            # Algoritmo de aproximação (Req 28)
+            nearest = min(available_sps, key=lambda x: abs(x - sp))
+            total_days += avg_per_sp[nearest]
+        else:
+            total_days += 1 # Valor default
+            
+    return jsonify({'totalDays': round(total_days, 1)})
+
+# REQUISITO 29: Exportar CSV
+@app.route('/api/reports/export/csv', methods=['GET'])
+def export_csv():
+    gestor_id = request.args.get('gestorId')
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT u.username, t.descricao, t.data_prevista_inicio, t.data_prevista_fim, 
+               tp.name as tipo, t.data_real_inicio, t.data_real_fim
+        FROM tasks t
+        LEFT JOIN users u ON t.programador_id = u.id
+        LEFT JOIN task_types tp ON t.tipo_id = tp.id
+        WHERE t.gestor_id = %s AND t.estado = 'Done'
+    """, (gestor_id,))
+    tasks = cursor.fetchall()
+    conn.close()
+
+    si = io.StringIO()
+    cw = csv.writer(si, delimiter=';')
+    cw.writerow(['Programador', 'Descricao', 'DataPrevistaInicio', 'DataPrevistaFim', 'Tipo', 'DataRealInicio', 'DataRealFim'])
+    
+    for t in tasks:
+        cw.writerow([
+            t['username'], t['descricao'], t['data_prevista_inicio'], t['data_prevista_fim'],
+            t['tipo'], t['data_real_inicio'], t['data_real_fim']
+        ])
+        
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = "attachment; filename=relatorio.csv"
+    output.headers["Content-type"] = "text/csv"
+    return output
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

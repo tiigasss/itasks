@@ -1,7 +1,7 @@
 <div class="p-4">
   <div class="flex items-center justify-between mb-3">
     <h2 class="text-xl text-white">Gestão de Utilizadores</h2>
-    <button class="px-3 py-2 bg-emerald-500 rounded" (click)="startCreate()">Novo</button>
+    <button class="px-3 py-2 bg-green-700 hover:bg-green-800 hover:cursor-pointer rounded" (click)="startCreate()">Novo</button>
   </div>
 
   <div class="grid grid-cols-3 gap-3 mb-4">
@@ -30,7 +30,7 @@
       </select>
       <input formControlName="password" placeholder="password" class="p-2 rounded bg-neutral-700 text-white"/>
       <div class="col-span-2 flex gap-2 mt-3">
-        <button type="submit" class="px-3 py-2 bg-emerald-500 rounded">Guardar</button>
+        <button type="submit" class="px-3 py-2 bg-green-700 hover:bg-green-800 hover:cursor-pointer rounded">Guardar</button>
         <button type="button" class="px-3 py-2 bg-neutral-700 rounded" (click)="form.reset()">Limpar</button>
       </div>
     </form>

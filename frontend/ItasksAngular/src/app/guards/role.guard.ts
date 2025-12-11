@@ -19,3 +19,13 @@ export const roleGuard = (allowed: ('Gestor'|'Programador')[]): CanActivateFn =>
     return true;
   };
 };
+
+export const guestGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (auth.currentUserValue) {
+    router.navigate(['/board']);
+    return false;
+  }
+  return true;
+}

@@ -1,9 +1,27 @@
-<div class="bg-gray-800 p-3 rounded mb-3" cdkDrag>
-  <div class="flex justify-between">
-    <h3 class="text-sm font-semibold text-white">{{ task.descricao || '(sem desc)' }}</h3>
-    <span class="text-xs px-2 py-1 rounded bg-neon-green text-black">SP: {{ task.storyPoints ?? 0 }}</span>
+<div class="bg-gray-800 p-3 rounded-md mb-2 border-l-[6px] shadow-sm hover:bg-gray-750 transition-all cursor-grab active:cursor-grabbing group"
+     [style.border-left-color]="getTypeColor(task.tipoId)">
+
+  <div class="flex justify-between items-center mb-2">
+    <span class="text-[10px] font-mono text-gray-500">#{{ task.id.slice(-4) }}</span>
+    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-white border border-white/10">
+      {{ task.storyPoints ?? 0 }} SP
+    </span>
   </div>
-  <div class="text-xs text-neutral-300 mt-1">
-    {{ task.programadorId ? ('Assigned: ' + task.programadorId) : 'Unassigned' }}
+
+  <h3 class="text-sm font-medium text-gray-100 mb-3 leading-snug">{{ task.descricao || 'Sem título' }}</h3>
+
+  <div class="flex justify-between items-center pt-2 border-t border-gray-700/50 mt-1">
+    <div class="flex items-center gap-1 text-[10px] text-gray-400" *ngIf="task.dataPrevistaFim">
+        <span>📅</span> <span>{{ task.dataPrevistaFim | date:'dd/MM' }}</span>
+    </div>
+
+    <div class="flex items-center gap-2 ml-auto" [title]="assigneeName || 'Unassigned'">
+      <span class="text-[10px] text-gray-400 font-medium truncate max-w-[80px]">
+        {{ assigneeName || 'Unassigned' }}
+      </span>
+      <div class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[9px] text-white font-bold shadow-sm border border-indigo-400">
+        {{ getInitials(assigneeName) }}
+      </div>
+    </div>
   </div>
 </div>

@@ -1,37 +1,44 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CdkDragDrop, CdkDropList, CdkDropListGroup, DragDropModule, moveItemInArray, transferArrayItem } from "@angular/cdk/drag-drop";
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { CdkDragDrop, CdkDropList, DragDropModule } from "@angular/cdk/drag-drop";
 import { Card } from '../card/card';
 import { TaskModel } from '../models/task';
+import { CommonModule } from '@angular/common';
+import { AuthService } from '../auth/auth-service'; // Importar AuthService
 
 @Component({
   selector: 'app-column',
-  imports: [CdkDropList, DragDropModule, Card],
+  standalone: true,
+  imports: [CdkDropList, DragDropModule, Card, CommonModule],
   templateUrl: './column.html',
-  styles: ``,
+  styleUrl: './column.css'
 })
 export class Column {
   @Input() title!: string;
   @Input() tasks!: TaskModel[];
   @Input() id!: string;
+  @Input() connectedTo: string[] = [];
+  @Input() usersMap: { [key: string]: string } = {};
+
   @Output() dropped = new EventEmitter<CdkDragDrop<TaskModel[]>>();
+
+  // Injetar o Auth para saber quem está logado
+  private auth = inject(AuthService);
+  currentUser = this.auth.currentUserValue;
 
   trackById(index: number, item: TaskModel) { return item.id; }
 
-  emitDrop(event: CdkDragDrop<TaskModel[]>) {
-      console.log('🟢 Column emitted drop event', event);
-    this.dropped.emit(event);
-  }
+  // Função para verificar se o Drag deve ser bloqueado
+  isDisabled(task: TaskModel): boolean {
+    if (!this.currentUser) return true; // Se não houver user, bloqueia tudo
+    
+    // Gestor pode mexer em tudo (Regra geral, ou podes restringir aos dele)
+    if (this.currentUser.role === 'Gestor') return false; 
 
-  // dropped(event: CdkDragDrop<Task[]>) {
-  //   if (event.previousContainer === event.container) {
-  //     moveItemInArray(event.container.data, event.previousIndex, event.currentIndex)
-  //   } else {
-  //     transferArrayItem(
-  //       event.previousContainer.data,
-  //       event.container.data,
-  //       event.previousIndex,
-  //       event.currentIndex
-  //     )
-  //   }
-  // }
+    // Programador SÓ pode mexer nas SUAS tarefas (Req 11)
+    if (this.currentUser.role === 'Programador') {
+        return task.programadorId !== this.currentUser.id;
+    }
+    
+    return true;
+  }
 }

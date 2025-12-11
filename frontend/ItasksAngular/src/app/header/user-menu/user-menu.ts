@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../auth/auth-service';
 import { RouterModule, Router } from '@angular/router';
@@ -10,9 +10,12 @@ import { RouterModule, Router } from '@angular/router';
   templateUrl: './user-menu.html'
 })
 export class UserMenuComponent {
-  user: any = null;
-  constructor(private auth: AuthService, private router: Router) {
-    this.user = this.auth.currentUserValue;
+  @Input() user: any;
+
+  constructor(private auth: AuthService, private router: Router) {}
+
+  logout() {
+    this.auth.logout();
+    this.router.navigate(['/login']);
   }
-  logout(){ this.auth.logout(); this.router.navigate(['/login']); }
 }

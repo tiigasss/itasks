@@ -1,16 +1,32 @@
-<section class="bg-gray-900 text-white rounded-lg p-4 min-w-[280px] max-w-[320px] flex flex-col">
-    <h2 class="text-neon-green font-bold mb-3">{{ title }}</h2>
+<div class="bg-[#0e1621] rounded-lg p-4 h-full flex flex-col shadow-lg border border-white/5">
+    
+    <h2 class="text-xl font-semibold mb-4" [ngClass]="{
+        'text-red-500': id === 'ready',
+        'text-cyan-500': id === 'inprogress',
+        'text-lime-500': id === 'done'
+    }">
+        {{ title }} <span class="text-xs text-gray-500 font-normal ml-2">({{ tasks.length }})</span>
+    </h2>
+
     <div 
-        cdkDropList
+        cdkDropList 
         [id]="id"
-        [cdkDropListData]="tasks"
-        [cdkDropListConnectedTo]="['ready', 'inprogress', 'review', 'done']"
-        (cdkDropListDropped)="emitDrop($event)"
-        class="flex-1 overflow-auto min-h-[100px]">
-        @for (t of tasks; track trackById($index, t)) {
-            <div cdkDrag [cdkDragData]="t">
-                <app-card [task]="t"></app-card>
-            </div>
+        [cdkDropListData]="tasks" 
+        [cdkDropListConnectedTo]="connectedTo"
+        (cdkDropListDropped)="dropped.emit($event)"
+        class="flex-1 space-y-3 overflow-y-auto pr-2 custom-scroll min-h-[100px]">
+        
+        @for (task of tasks; track task.id) {
+            <app-card 
+                [task]="task" 
+                [assigneeName]="usersMap[task.programadorId || ''] || task.programadorId"
+                cdkDrag
+                [cdkDragDisabled]="isDisabled(task)"
+                [class.opacity-50]="isDisabled(task)"
+                [class.cursor-not-allowed]="isDisabled(task)">
+                
+                <div *cdkDragPlaceholder class="opacity-0"></div>
+            </app-card>
         }
     </div>
-</section>
+</div>
