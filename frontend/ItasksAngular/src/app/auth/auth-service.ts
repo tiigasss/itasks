@@ -11,20 +11,37 @@ export class AuthService {
   currentUser$ = this._currentUser$.asObservable();
 
   constructor(private users: UserService) {
-    const raw = sessionStorage.getItem(this.STORAGE_KEY);
-    if (raw) {
-      try { this._currentUser$.next(JSON.parse(raw) as AppUser); } catch { sessionStorage.removeItem(this.STORAGE_KEY); }
+    // Proteção para rodar apenas no browser
+    if (typeof window !== 'undefined' && sessionStorage) {
+      const raw = sessionStorage.getItem(this.STORAGE_KEY);
+      if (raw) {
+        try {
+          this._currentUser$.next(JSON.parse(raw) as AppUser);
+        } catch {
+          sessionStorage.removeItem(this.STORAGE_KEY);
+        }
+      }
     }
   }
 
   login(username: string, password: string) {
     const found = this.users.getAll().find(u => u.username === username && u.password === password);
     if (!found) return throwError(() => new Error('Credenciais inválidas'));
-    sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(found));
+    
+    if (typeof window !== 'undefined' && sessionStorage) {
+      sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(found));
+    }
+    
     this._currentUser$.next(found);
     return of({ user: found }).pipe(delay(200));
   }
 
-  logout() { sessionStorage.removeItem(this.STORAGE_KEY); this._currentUser$.next(null); }
+  logout() {
+    if (typeof window !== 'undefined' && sessionStorage) {
+      sessionStorage.removeItem(this.STORAGE_KEY);
+    }
+    this._currentUser$.next(null);
+  }
+
   get currentUserValue(): AppUser | null { return this._currentUser$.value; }
 }

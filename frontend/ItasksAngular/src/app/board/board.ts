@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Column } from '../column/column';
 import { TaskService } from '../services/task.service';
@@ -12,10 +12,17 @@ import { ManagerEstimatesModal } from '../reports/manager-estimates/manager-esti
 @Component({
   selector: 'app-board',
   standalone: true,
-  imports: [CommonModule, Column, DragDropModule, TaskForm, ManagerEstimatesModal],
+  imports: [
+    CommonModule,
+    Column,
+    DragDropModule,
+    TaskForm,
+    ManagerEstimatesModal
+  ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './board.html'
 })
-export class Board {
+export class Board implements OnInit {
   ready: TaskModel[] = [];
   inProgress: TaskModel[] = [];
   done: TaskModel[] = [];
@@ -33,25 +40,26 @@ export class Board {
     private userService: UserService
   ) {
     this.currentUserRole = auth.currentUserValue?.role ?? '';
-    this.refresh();
+  }
 
-    // Carregar nomes dos utilizadores
-    this.userService.getAll().subscribe({
-      next: (users) => {
-        users.forEach(u => this.usersMap[u.id] = u.displayName || u.username);
-      },
-      error: (err) => console.error('Erro ao carregar users', err)
-    });
+  ngOnInit() {
+    const users = this.userService.getAll();
+    if (users && Array.isArray(users)) {
+      users.forEach(u => this.usersMap[u.id] = u.displayName || u.username);
+    }
+    this.refresh();
   }
 
   refresh() {
     this.taskService.getAll().subscribe({
       next: (tasks) => {
-        this.ready = tasks.filter(t => t.estado === 'ToDo').sort((a, b) => a.ordem - b.ordem);
-        this.inProgress = tasks.filter(t => t.estado === 'Doing').sort((a, b) => a.ordem - b.ordem);
-        this.done = tasks.filter(t => t.estado === 'Done');
+        if (!tasks) return;
+        const sorted = tasks.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+        this.ready = sorted.filter(t => t.estado === 'ToDo');
+        this.inProgress = sorted.filter(t => t.estado === 'Doing');
+        this.done = sorted.filter(t => t.estado === 'Done');
       },
-      error: (err) => console.error('Erro ao carregar tasks', err)
+      error: (e) => console.error(e)
     });
   }
 
@@ -68,7 +76,7 @@ export class Board {
         this.refresh();
         this.closeModal();
       },
-      error: (err: any) => alert(err.error?.error || 'Erro ao criar tarefa')
+      error: (err) => alert('Erro: ' + (err.error?.error || err.message))
     });
   }
 
@@ -78,22 +86,16 @@ export class Board {
     } else {
       const task = event.previousContainer.data[event.previousIndex];
       let targetState = EstadoAtual.ToDo;
-
       if (event.container.id === 'inprogress') targetState = EstadoAtual.Doing;
       if (event.container.id === 'done') targetState = EstadoAtual.Done;
 
       this.taskService.moveTask(task.id, targetState, this.currentUserRole).subscribe({
         next: () => {
-          transferArrayItem(
-            event.previousContainer.data,
-            event.container.data,
-            event.previousIndex,
-            event.currentIndex
-          );
+          transferArrayItem(event.previousContainer.data, event.container.data, event.previousIndex, event.currentIndex);
           this.refresh();
         },
-        error: (err: any) => {
-          alert('Movimento bloqueado: ' + (err.error?.error || 'Erro desconhecido'));
+        error: (err) => {
+          alert('Erro: ' + (err.error?.error || 'Movimento não permitido'));
           this.refresh();
         }
       });
