@@ -33,7 +33,6 @@ export class ProgrammerCompletedComponent {
     const me = auth.currentUserValue;
     if (!me) return;
 
-    // CORREÇÃO: Subscrever
     this.taskService.getAll().subscribe((tasks: TaskModel[]) => {
       const myTasks = tasks.filter(t => t.estado === 'Done' && t.programadorId === me.id);
       this.rows = myTasks.map(t => ({
