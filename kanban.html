@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itasks - Kanban Board</title>
+    <link rel="stylesheet" href="style.css">
+    
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>🚀 Itasks - Sistema de Gestão</h1>
+            <div class="user-info">
+                <span id="userName">Carregando...</span>
+                <button class="logout-btn" id="logoutBtn">Logout</button>
+            </div>
+        </header>
+
+        <nav class="main-nav" id="mainNav">
+            <button class="nav-btn" id="btnTasks">📋 Nova Tarefa</button>
+            <button class="nav-btn" id="btnUsers">👥 Gestão de Utilizadores</button>
+            <button class="nav-btn" id="btnReports">📊 Relatórios</button>
+            <button class="nav-btn" id="btnTaskTypes">🏷️ Tipos de Tarefa</button>
+        </nav>
+
+        <main class="kanban-board">
+            <!-- Coluna To Do -->
+            <div class="kanban-column" data-state="ToDo">
+                <h3>📋 To Do (<span id="todoCount">0</span>)</h3>
+                <div class="tasks-list" id="todoList">
+                    <!-- Tarefas serão inseridas aqui via JavaScript -->
+                </div>
+                <button class="add-task-btn" id="addTodoBtn">+ Adicionar Tarefa</button>
+            </div>
+            
+            <!-- Coluna Doing -->
+            <div class="kanban-column" data-state="Doing">
+                <h3>🛠️ Doing (<span id="doingCount">0</span>)</h3>
+                <div class="tasks-list" id="doingList">
+                    <!-- Tarefas serão inseridas aqui via JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Coluna Done -->
+            <div class="kanban-column" data-state="Done">
+                <h3>✅ Done (<span id="doneCount">0</span>)</h3>
+                <div class="tasks-list" id="doneList">
+                    <!-- Tarefas serão inseridas aqui via JavaScript -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        // Carregar dados do usuário
+        function loadUserData() {
+            const userData = JSON.parse(localStorage.getItem('currentUser'));
+            if (!userData) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            document.getElementById('userName').textContent = 
+                `👋 ${userData.name} (${userData.type})`;
+            
+            // Ajustar menu baseado no tipo de usuário
+            if (userData.type === 'Programador') {
+                document.getElementById('btnUsers').style.display = 'none';
+                document.getElementById('btnTaskTypes').style.display = 'none';
+                document.getElementById('addTodoBtn').style.display = 'none';
+            }
+            
+            return userData;
+        }
+
+        // Carregar tarefas do backend
+        async function loadTasks() {
+            try {
+                const response = await fetch(`${API_BASE}/tasks`);
+                const tasks = await response.json();
+                
+                const todoList = document.getElementById('todoList');
+                const doingList = document.getElementById('doingList');
+                const doneList = document.getElementById('doneList');
+                
+                // Limpar listas
+                todoList.innerHTML = '';
+                doingList.innerHTML = '';
+                doneList.innerHTML = '';
+                
+                // Contadores
+                let todoCount = 0;
+                let doingCount = 0;
+                let doneCount = 0;
+                
+                // Adicionar tarefas às colunas
+                tasks.forEach(task => {
+                    const taskElement = createTaskElement(task);
+                    
+                    if (task.state === 'ToDo') {
+                        todoList.appendChild(taskElement);
+                        todoCount++;
+                    } else if (task.state === 'Doing') {
+                        doingList.appendChild(taskElement);
+                        doingCount++;
+                    } else if (task.state === 'Done') {
+                        doneList.appendChild(taskElement);
+                        doneCount++;
+                    }
+                });
+                
+                // Atualizar contadores
+                document.getElementById('todoCount').textContent = todoCount;
+                document.getElementById('doingCount').textContent = doingCount;
+                document.getElementById('doneCount').textContent = doneCount;
+                
+            } catch (error) {
+                console.error('Erro ao carregar tarefas:', error);
+                alert('Erro ao carregar tarefas. Verifique se o servidor está a correr!');
+            }
+        }
+
+        // Criar elemento de tarefa
+        function createTaskElement(task) {
+            const taskDiv = document.createElement('div');
+            taskDiv.className = 'task-card';
+            taskDiv.setAttribute('data-task-id', task.id);
+            
+            taskDiv.innerHTML = `
+                <div class="task-order">Ordem #${task.order}</div>
+                <h4>${task.title}</h4>
+                <div class="task-meta">👤 ${task.programmer}</div>
+                <div class="task-meta">📊 ${task.story_points} Story Points</div>
+                <div class="task-meta">📅 ${task.predicted_end_date}</div>
+            `;
+            
+            // Adicionar botões de movimento baseado no estado
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (currentUser.type === 'Programador') {
+                if (task.state === 'ToDo') {
+                    taskDiv.innerHTML += `<button class="move-btn" onclick="moveTask(${task.id}, 'Doing')">▶️ Mover para Doing</button>`;
+                } else if (task.state === 'Doing') {
+                    taskDiv.innerHTML += `<button class="move-btn" onclick="moveTask(${task.id}, 'Done')">✅ Mover para Done</button>`;
+                }
+            }
+            
+            // Adicionar evento de clique para detalhes
+            taskDiv.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('move-btn')) {
+                    showTaskDetails(task);
+                }
+            });
+            
+            return taskDiv;
+        }
+
+        // Mostrar detalhes da tarefa
+        function showTaskDetails(task) {
+            alert(`📋 **Detalhes da Tarefa**\n\n` +
+                  `**Título:** ${task.title}\n` +
+                  `**Descrição:** ${task.description}\n` +
+                  `**Programador:** ${task.programmer}\n` +
+                  `**Story Points:** ${task.story_points}\n` +
+                  `**Estado:** ${task.state}\n` +
+                  `**Ordem:** ${task.order}\n` +
+                  `**Data Prevista Fim:** ${task.predicted_end_date}`);
+        }
+
+        // Mover tarefa entre estados
+        async function moveTask(taskId, newState) {
+            try {
+                const response = await fetch(`${API_BASE}/tasks/${taskId}/move`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ state: newState })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Tarefa movida com sucesso!');
+                    loadTasks(); // Recarregar as tarefas
+                } else {
+                    alert('Erro ao mover tarefa: ' + result.message);
+                }
+            } catch (error) {
+                alert('Erro de conexão ao mover tarefa');
+            }
+        }
+
+        // Configurar botões de navegação
+        function setupNavigation() {
+            // CORREÇÃO: Agora abre o formulário de tarefas
+            document.getElementById('btnTasks').addEventListener('click', () => {
+                window.location.href = 'task-form.html';
+            });
+            
+            document.getElementById('btnUsers').addEventListener('click', async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/users`);
+                    const users = await response.json();
+                    alert(`👥 **Utilizadores do Sistema**\n\n${users.map(u => `• ${u.name} (${u.type}) - ${u.department}`).join('\n')}`);
+                } catch (error) {
+                    console.error('Erro ao carregar utilizadores:', error);
+                }
+            });
+            
+            document.getElementById('btnReports').addEventListener('click', () => {
+                alert('📊 Abrir relatórios e estatísticas');
+            });
+            
+            document.getElementById('btnTaskTypes').addEventListener('click', () => {
+                alert('🏷️ Abrir gestão de tipos de tarefa');
+            });
+            
+            // CORREÇÃO: Este botão também abre o formulário
+            document.getElementById('addTodoBtn').addEventListener('click', () => {
+                window.location.href = 'task-form.html';
+            });
+            
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
+            });
+        }
+
+        // Inicializar aplicação
+        async function init() {
+            loadUserData();
+            await loadTasks();
+            setupNavigation();
+        }
+
+        // Executar quando a página carregar
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

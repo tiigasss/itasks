@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Tarefa - Itasks</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>🚀 Nova Tarefa</h1>
+            <div class="user-info">
+                <span id="userName"></span>
+                <button class="logout-btn" onclick="goBack()">← Voltar</button>
+            </div>
+        </header>
+
+        <div class="form-container">
+            <form id="taskForm" class="task-form">
+                <div class="form-group">
+                    <label for="title">📋 Título da Tarefa *</label>
+                    <input type="text" id="title" name="title" required placeholder="Ex: Desenvolver funcionalidade X">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">📝 Descrição</label>
+                    <textarea id="description" name="description" rows="4" placeholder="Descreva detalhadamente a tarefa..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="programmer_id">👤 Programador Responsável *</label>
+                        <select id="programmer_id" name="programmer_id" required>
+                            <option value="">Selecione um programador</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="order">🔢 Ordem de Execução *</label>
+                        <input type="number" id="order" name="order" min="1" required placeholder="1">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="story_points">📊 Story Points</label>
+                        <select id="story_points" name="story_points">
+                            <option value="1">1 - Muito Pequena</option>
+                            <option value="2">2 - Pequena</option>
+                            <option value="3" selected>3 - Média</option>
+                            <option value="5">5 - Grande</option>
+                            <option value="8">8 - Muito Grande</option>
+                            <option value="13">13 - Enorme</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="predicted_start_date">📅 Data Prevista Início *</label>
+                        <input type="date" id="predicted_start_date" name="predicted_start_date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="predicted_end_date">📅 Data Prevista Fim *</label>
+                        <input type="date" id="predicted_end_date" name="predicted_end_date" required>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="goBack()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Criar Tarefa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        // Carregar dados do usuário
+        function loadUserData() {
+            const userData = JSON.parse(localStorage.getItem('currentUser'));
+            if (!userData) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            document.getElementById('userName').textContent = `👋 ${userData.name}`;
+            
+            // Apenas gestores podem criar tarefas
+            if (userData.type !== 'Gestor') {
+                alert('Apenas gestores podem criar tarefas!');
+                window.location.href = 'kanban.html';
+            }
+        }
+
+        // Carregar programadores
+        async function loadProgrammers() {
+            try {
+                const response = await fetch(`${API_BASE}/programmers`);
+                const programmers = await response.json();
+                
+                const select = document.getElementById('programmer_id');
+                programmers.forEach(programmer => {
+                    const option = document.createElement('option');
+                    option.value = programmer.id;
+                    option.textContent = `${programmer.name} (${programmer.department})`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar programadores:', error);
+            }
+        }
+
+        // Configurar datas padrão
+        function setupDates() {
+            const today = new Date().toISOString().split('T')[0];
+            const nextWeek = new Date();
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            const nextWeekStr = nextWeek.toISOString().split('T')[0];
+            
+            document.getElementById('predicted_start_date').value = today;
+            document.getElementById('predicted_end_date').value = nextWeekStr;
+        }
+
+        // Submeter formulário
+        document.getElementById('taskForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const taskData = {
+                title: formData.get('title'),
+                description: formData.get('description'),
+                programmer_id: parseInt(formData.get('programmer_id')),
+                order: parseInt(formData.get('order')),
+                story_points: parseInt(formData.get('story_points')),
+                predicted_start_date: formData.get('predicted_start_date'),
+                predicted_end_date: formData.get('predicted_end_date')
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/tasks`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(taskData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ Tarefa criada com sucesso!');
+                    window.location.href = 'kanban.html';
+                } else {
+                    alert('❌ Erro ao criar tarefa: ' + result.message);
+                }
+            } catch (error) {
+                alert('❌ Erro de conexão ao criar tarefa');
+            }
+        });
+
+        function goBack() {
+            window.location.href = 'kanban.html';
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserData();
+            loadProgrammers();
+            setupDates();
+        });
+    </script>
+</body>
+</html>
