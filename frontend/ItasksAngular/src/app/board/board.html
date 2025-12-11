@@ -1,7 +1,7 @@
 <div class="flex justify-between items-center px-6 pt-6 mb-2">
   <h1 class="text-2xl font-bold text-white">Project Board</h1>
-
-  <div *ngIf="currentUserRole === 'Gestor'" class="flex gap-2">
+  @if (currentUserRole === "Gestor") {
+  <div class="flex gap-2">
     <button (click)="openEstimates()"
       class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow-lg font-medium text-sm">
       ⏱️ Previsão ToDo
@@ -12,6 +12,8 @@
       + Nova Tarefa
     </button>
   </div>
+  }
+
 </div>
 
 <div class="grid grid-cols-3 gap-6 p-6 h-[calc(100%-80px)]">
@@ -23,15 +25,13 @@
     (dropped)="onDropped($event)"></app-column>
 </div>
 
-<!-- Modal Nova Tarefa -->
 <div *ngIf="isModalOpen" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
   <div class="bg-neutral-900 p-6 rounded-lg w-full max-w-2xl border border-neutral-700 shadow-2xl">
     <app-task-form (save)="onTaskCreated($event)" (cancelled)="closeModal()"></app-task-form>
   </div>
 </div>
 
-<!-- Modal Estimativa -->
-<ng-container *ngIf="isEstimateModalOpen">
+<div *ngIf="isEstimateModalOpen"
+  class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
   <app-manager-estimates-modal (close)="closeEstimates()"></app-manager-estimates-modal>
-</ng-container>
-
+</div>
